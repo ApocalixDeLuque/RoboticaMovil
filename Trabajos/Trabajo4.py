@@ -1,6 +1,7 @@
 import time
 import math as m
-
+import numpy as np
+from scipy.interpolate import splprep, splev
 from coppeliasim_zmqremoteapi_client import RemoteAPIClient
 
 def convert_velocity_to_wheel_speeds(linear_velocity, angular_velocity, wheel_radius, wheel_distance):
@@ -27,8 +28,19 @@ robot = simulation.getObject("/PioneerP3DX")
 
 simulation.startSimulation()
 
-# Define the goal points
-goal_points = [(2, -2), (2, 2), (-2, 2), (-2, -2), (2, -2)]
+# Define the control points for the B-spline
+ttime = 1.0
+xarr = np.array([0.0, 1.0, 2.0, 1.0, 0.0])
+yarr = np.array([0.0, 1.0, 0.0, -1.0, 0.0])
+tarr = np.linspace(0, ttime, len(xarr))
+
+# Generate the B-spline
+tck, u = splprep([xarr, yarr], s=0)
+tnew = np.linspace(0, ttime, 100)
+out = splev(tnew, tck)
+
+# Use the B-spline points as the goal points
+goal_points = list(zip(out[0], out[1]))
 
 velocity_gain = 0.1
 heading_gain = 15
